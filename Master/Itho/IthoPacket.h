@@ -1,5 +1,5 @@
 /*
- * Author: Klusjesman
+ * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
  */
 
 #ifndef ITHOPACKET_H_

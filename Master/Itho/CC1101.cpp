@@ -1,15 +1,16 @@
 /*
- * Author: Klusjesman
+ * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
  */
 
 #include "CC1101.h"
-#include "../time/delay.h"
-#include "../suart/SerialDebug.h"
 
 // default constructor
-CC1101::CC1101(SPI *spi)
+CC1101::CC1101()
 {
-	this->spi = spi;
+	SPI.begin();
+#ifdef ESP8266
+	pinMode(SS, OUTPUT);
+#endif
 } //CC1101
 
 // default destructor
@@ -17,9 +18,19 @@ CC1101::~CC1101()
 {
 } //~CC1101
 
+/***********************/
+// SPI helper functions select() and deselect()
+inline void CC1101::select(void) {
+	digitalWrite(SS, LOW);
+}
+
+inline void CC1101::deselect(void) {
+	digitalWrite(SS, HIGH);
+}
+
 void CC1101::spi_waitMiso()
 {
-	while ((SPI_PORT_MISO >> SPI_PIN_MISO) & 0x01);
+    while(digitalRead(MISO) == HIGH) yield();
 }
 
 void CC1101::init()
@@ -29,52 +40,52 @@ void CC1101::init()
 
 void CC1101::reset()
 {
-	spi->deselect();
-	delay_us(5);
-	spi->select();
-	delay_us(10);
-	spi->deselect();
-	delay_us(45);
-	spi->select();
+	deselect();
+	delayMicroseconds(5);
+	select();
+	delayMicroseconds(10);
+	deselect();
+	delayMicroseconds(45);
+	select();
 
 	spi_waitMiso();
-	writeCommand(CC1101_SRES);
-	delay_ms(10);
+	SPI.transfer(CC1101_SRES);
+	delay(10);
 	spi_waitMiso();
-	spi->deselect();
+	deselect();
 }
 
 uint8_t CC1101::writeCommand(uint8_t command) 
 {
 	uint8_t result;
 	
-	spi->select();
+	select();
 	spi_waitMiso();
-	result = spi->write(command);
-	spi->deselect();
+	result = SPI.transfer(command);
+	deselect();
 	
 	return result;
 }
 
 void CC1101::writeRegister(uint8_t address, uint8_t data) 
 {
-	spi->select();
+	select();
 	spi_waitMiso();
-	spi->write(address);
-	spi->write(data);
-	spi->deselect();
+	SPI.transfer(address);
+	SPI.transfer(data);
+	deselect();
 }
 
 uint8_t CC1101::readRegister(uint8_t address)
 {
 	uint8_t val;
-
-	spi->select();
+  
+	select();
 	spi_waitMiso();
-	spi->write(address);
-	val = spi->read();
-	spi->deselect();
-	
+	SPI.transfer(address);
+	val = SPI.transfer(0);
+	deselect();
+  
 	return val;
 }
 
@@ -82,15 +93,15 @@ uint8_t CC1101::readRegisterMedian3(uint8_t address)
 {
   uint8_t val, val1, val2, val3;
 
-  spi->select();
+  select();
   spi_waitMiso();
-  spi->write(address);
-  val1 = spi->read();
-  spi->write(address);
-  val2 = spi->read();
-  spi->write(address);
-  val3 = spi->read();
-  spi->deselect();
+  SPI.transfer(address);
+  val1 = SPI.transfer(0);
+  SPI.transfer(address);
+  val2 = SPI.transfer(0);
+  SPI.transfer(address);
+  val3 = SPI.transfer(0);
+  deselect();
   // reverse sort (largest in val1) because this is te expected order for TX_BUFFER
   if (val3 > val2) {val = val3; val3 = val2; val2 = val; } //Swap(val3,val2)
   if (val2 > val1) {val = val2; val2 = val1, val1 = val; } //Swap(val2,val1)
@@ -142,30 +153,28 @@ void CC1101::writeBurstRegister(uint8_t address, uint8_t* data, uint8_t length)
 {
 	uint8_t i;
 
-	spi->select();
+	select();
 	spi_waitMiso();
-	spi->write(address | CC1101_WRITE_BURST);
-
-	//write all data bytes
-	for(i=0 ; i<length ; i++)
-		spi->write(data[i]);
-
-	spi->deselect();
+	SPI.transfer(address | CC1101_WRITE_BURST);
+	for (i = 0; i < length; i++) {
+		SPI.transfer(data[i]);
+	}
+	deselect();
 }
 
 void CC1101::readBurstRegister(uint8_t* buffer, uint8_t address, uint8_t length)
 {
 	uint8_t i;
 	
-	spi->select();
+	select();
 	spi_waitMiso();
-	spi->write(address | CC1101_READ_BURST);
+	SPI.transfer(address | CC1101_READ_BURST);
 	
-	//read all data bytes
-	for (i=0; i<length; i++)
-		buffer[i] = spi->read();
-		
-	spi->deselect();
+	for (i = 0; i < length; i++) {
+		buffer[i] = SPI.transfer(0x00);
+	}
+	
+	deselect();
 }
 
 //wait for fixed length in rx fifo
@@ -239,7 +248,7 @@ bool CC1101::sendData(CC1101Packet *packet)
 		while (index < packet->length)
 		{
 			//check if there is free space in the fifo
-			while ((txStatus = (readRegisterMedian3(CC1101_TXBYTES | CC1101_STATUS_REGISTER) & CC1101_BITS_RX_BYTES_IN_FIFO)) > (CC1101_DATA_LEN – 2));
+			while ((txStatus = (readRegisterMedian3(CC1101_TXBYTES | CC1101_STATUS_REGISTER) & CC1101_BITS_RX_BYTES_IN_FIFO)) > (CC1101_DATA_LEN - 2));
 			
 			//calculate how many bytes we can send
 			length = (CC1101_DATA_LEN - txStatus);
@@ -257,8 +266,7 @@ bool CC1101::sendData(CC1101Packet *packet)
 	do
 	{
 		MarcState = (readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER) & CC1101_BITS_MARCSTATE);
-		if (MarcState == CC1101_MARCSTATE_TXFIFO_UNDERFLOW) debug.serOut("TXFIFO_UNDERFLOW occured in sendData() \n");
+		if (MarcState == CC1101_MARCSTATE_TXFIFO_UNDERFLOW) Serial.print("TXFIFO_UNDERFLOW occured in sendData() \n");
 	}
   	while((MarcState != CC1101_MARCSTATE_IDLE) && (MarcState != CC1101_MARCSTATE_TXFIFO_UNDERFLOW));
 }
-

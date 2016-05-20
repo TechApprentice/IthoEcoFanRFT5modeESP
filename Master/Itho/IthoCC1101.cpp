@@ -1,14 +1,14 @@
 /*
- * Author: Klusjesman
+ * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
  */
 
 #include "IthoCC1101.h"
 #include <string.h>
-#include "../time/delay.h"
-#include "../suart/SerialDebug.h"
+#include <Arduino.h>
+#include <SPI.h>
 
 // default constructor
-IthoCC1101::IthoCC1101(SPI *spi, uint8_t counter, uint8_t sendTries) : CC1101(spi)
+IthoCC1101::IthoCC1101(uint8_t counter, uint8_t sendTries) : CC1101()
 {
 	this->outIthoPacket.counter = counter;
 	this->outIthoPacket.previous = low;
@@ -50,7 +50,7 @@ void IthoCC1101::initSendMessage1()
 	Whitening			disabled
 	*/
 	writeCommand(CC1101_SRES);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeRegister(CC1101_IOCFG0 ,0x2E);		//High impedance (3-state)
 	writeRegister(CC1101_FREQ2 ,0x21);		//00100001	878MHz-927.8MHz
 	writeRegister(CC1101_FREQ1 ,0x65);		//01100101
@@ -91,7 +91,7 @@ void IthoCC1101::initSendMessage1()
 	
 	writeCommand(CC1101_STX);
 	writeCommand(CC1101_SIDLE);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeCommand(CC1101_SIDLE);
 
 	writeRegister(CC1101_MDMCFG4 ,0x08);	//00001000
@@ -112,14 +112,14 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 {
 	//finishTransfer();
 	writeCommand(CC1101_SIDLE);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeRegister(CC1101_IOCFG0 ,0x2E);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeRegister(CC1101_IOCFG1 ,0x2E);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeCommand(CC1101_SIDLE);
 	writeCommand(CC1101_SPWD);
-	delay_us(2);
+	delayMicroseconds(1);
 	
 	/*
 	Configuration reverse engineered from remote print. The commands below are used by IthoDaalderop.
@@ -138,7 +138,7 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 	Whitening			disabled
 	*/	
 	writeCommand(CC1101_SRES);
-	delay_us(1);
+	delayMicroseconds(1);
 	writeRegister(CC1101_IOCFG0 ,0x2E);		//High impedance (3-state)
 	writeRegister(CC1101_FREQ2 ,0x21);		//00100001	878MHz-927.8MHz
 	writeRegister(CC1101_FREQ1 ,0x65);		//01100101
@@ -211,7 +211,8 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 void IthoCC1101::finishTransfer()
 {
 	writeCommand(CC1101_SIDLE);
-	delay_us(1);
+	delayMicroseconds(1);
+
 	writeRegister(CC1101_IOCFG0 ,0x2E);
 	writeRegister(CC1101_IOCFG1 ,0x2E);
 	
@@ -249,7 +250,7 @@ void IthoCC1101::initReceive()
 	writeCommand(CC1101_SCAL);
 
 	//wait for calibration to finish
-	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE);
+	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE) yield();
 
 	writeRegister(CC1101_FSCAL2 ,0x00);
 	writeRegister(CC1101_MCSM0 ,0x18);			//no auto calibrate
@@ -293,7 +294,7 @@ void IthoCC1101::initReceive()
 	writeCommand(CC1101_SCAL);
 
 	//wait for calibration to finish
-	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE);
+	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE) yield();
 
 	writeRegister(CC1101_MCSM0 ,0x18);			//no auto calibrate
 	
@@ -305,7 +306,7 @@ void IthoCC1101::initReceive()
 
 	writeCommand(CC1101_SRX);
 	
-	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_RX);
+	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_RX) yield();
 	
 	initReceiveMessage1();
 }
@@ -336,6 +337,7 @@ void IthoCC1101::initReceiveMessage1()
 	{
 		if (marcState == CC1101_MARCSTATE_RXFIFO_OVERFLOW) // RX_OVERFLOW
 			writeCommand(CC1101_SFRX); //flush RX buffer
+		yield();
 	}
 	
 	receiveState = ExpectMessageStart;
@@ -385,6 +387,7 @@ void IthoCC1101::initReceiveMessage2(IthoCommand expectedCommand)
 	{
 		if (marcState == CC1101_MARCSTATE_RXFIFO_OVERFLOW) // RX_OVERFLOW
 			writeCommand(CC1101_SFRX); //flush RX buffer
+		yield();
 	}
 }
 
@@ -678,8 +681,8 @@ void IthoCC1101::parseMessageJoin()
 	/*
 	for (int i=0;i<inMessage2.length;i++)
 	{
-		debug.serOutInt(inMessage2.data[i]);
-		debug.serOut("\n");
+		Serial.print(inMessage2.data[i]);
+		Serial.print("\n");
 		
 	}	
 	*/
@@ -690,8 +693,8 @@ void IthoCC1101::parseMessageLeave()
 	/*
 	for (int i=0;i<inMessage2.length;i++)
 	{
-		debug.serOutInt(inMessage2.data[i]);
-		debug.serOut("\n");
+		Serial.print(inMessage2.data[i]);
+		Serial.print("\n");
 		
 	}	
 	*/
@@ -715,13 +718,13 @@ void IthoCC1101::testCreateMessage()
 	{
 		if (inMessage1.data[i] != outMessage1.data[i+4])
 		{
-			debug.serOut("message1 not ok=byte");
-			debug.serOutInt(i+4);
-			debug.serOut(" (");
-			debug.serOutInt(inMessage1.data[i]);
-			debug.serOut("/");
-			debug.serOutInt(outMessage1.data[i+4]);
-			debug.serOut(")\n");
+			Serial.print("message1 not ok=byte");
+			Serial.print(i+4);
+			Serial.print(" (");
+			Serial.print(inMessage1.data[i]);
+			Serial.print("/");
+			Serial.print(outMessage1.data[i+4]);
+			Serial.print(")\n");
 		}
 	}
 	
@@ -745,13 +748,13 @@ void IthoCC1101::testCreateMessage()
 	{
 		if (inMessage2.data[i] != outMessage2.data[i+8])
 		{
-			debug.serOut("message2 not ok=byte");
-			debug.serOutInt(i+8);
-			debug.serOut(" (");
-			debug.serOutInt(inMessage2.data[i]);
-			debug.serOut("/");
-			debug.serOutInt(outMessage2.data[i+8]);
-			debug.serOut(")\n");
+			Serial.print("message2 not ok=byte");
+			Serial.print(i+8);
+			Serial.print(" (");
+			Serial.print(inMessage2.data[i]);
+			Serial.print("/");
+			Serial.print(outMessage2.data[i+8]);
+			Serial.print(")\n");
 		}
 	}
 }
@@ -761,7 +764,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	CC1101Packet outMessage1;
 	CC1101Packet outMessage2;
 	uint8_t maxTries = sendTries;
-	uint8_t delay = 40;
+	uint8_t delaytime = 40;
 	
 	//update itho packet data
 	outIthoPacket.previous = outIthoPacket.command;
@@ -782,7 +785,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 			createMessageLeave(&outIthoPacket, &outMessage2);
 			//the leave command needs to be transmitted for 1 second according the manual
 			maxTries = 30;
-			delay = 4;
+			delaytime = 4;
 			break;
 		
 		default:
@@ -790,7 +793,7 @@ void IthoCC1101::sendCommand(IthoCommand command)
 			break;
 	}
 	
-	debug.serOut("send\n");
+	Serial.print("send\n");
 	
 	//send messages
 	for (int i=0;i<maxTries;i++)
@@ -799,14 +802,14 @@ void IthoCC1101::sendCommand(IthoCommand command)
 		initSendMessage1();
 		sendData(&outMessage1);
 		
-		delay_ms(4);
+		delay(4);
 		
 		//message2
 		initSendMessage2(outIthoPacket.command);
 		sendData(&outMessage2);
 		
 		finishTransfer();
-		delay_ms(delay);
+		delay(delaytime);
 	}
 }
 

@@ -1,5 +1,5 @@
 /*
- * Author: Klusjesman
+ * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
  */
 
 #ifndef __ITHOCC1101_H__
@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include "CC1101.h"
 #include "IthoPacket.h"
-#include "../time/millis.h"
 
 
 //pa table settings
@@ -69,7 +68,7 @@ class IthoCC1101 : protected CC1101
 	private:
 		//receive
 		IthoReceiveStates receiveState;											//state machine receive
-		millis_t lastMessage1Received;											//used for timeout detection
+		unsigned long lastMessage1Received;										//used for timeout detection
 		CC1101Packet inMessage1;												//temp storage message1
 		CC1101Packet inMessage2;												//temp storage message2
 		IthoPacket inIthoPacket;												//stores last received message data
@@ -82,7 +81,7 @@ class IthoCC1101 : protected CC1101
 		
 	//functions
 	public:
-		IthoCC1101(SPI *spi, uint8_t counter = 0, uint8_t sendTries = 3);		//set initial counter value
+		IthoCC1101(uint8_t counter = 0, uint8_t sendTries = 3);		//set initial counter value
 		~IthoCC1101();
 		
 		//init
@@ -102,7 +101,6 @@ class IthoCC1101 : protected CC1101
 				
 	protected:
 	private:
-		IthoCC1101();
 		IthoCC1101( const IthoCC1101 &c );
 		IthoCC1101& operator=( const IthoCC1101 &c );
 
