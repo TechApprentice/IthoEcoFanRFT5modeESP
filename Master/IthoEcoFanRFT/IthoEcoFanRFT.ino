@@ -32,8 +32,7 @@ CC11xx pins    ESP pins Arduino pins  Description
 IthoCC1101 rf;
 IthoPacket packet;
 
-void setup(void)
-{
+void setup(void) {
   Serial.begin(115200);
   delay(500);
   Serial.println("setup begin");
@@ -58,33 +57,33 @@ void loop(void) {
 			Serial.print(", ");
 			//show command
 			switch (packet.command) {
-				case unknown:
-					Serial.print("unknown\n");
-					break;
-				case low:
-					Serial.print("low\n");
-					break;
-				case medium:
-					Serial.print("medium\n");
-					break;
-				case full:
-					Serial.print("full\n");
-					break;
-				case timer1:
-					Serial.print("timer1\n");
-					break;
-				case timer2:
-					Serial.print("timer2\n");
-					break;
-				case timer3:
-					Serial.print("timer3\n");
-					break;
-				case join:
-					Serial.print("join\n");
-					break;
-				case leave:
-					Serial.print("leave\n");
-					break;
+        case IthoUnknown:
+          Serial.print("unknown\n");
+          break;
+        case IthoLow:
+          Serial.print("low\n");
+          break;
+        case IthoMedium:
+          Serial.print("medium\n");
+          break;
+        case IthoFull:
+          Serial.print("full\n");
+          break;
+        case IthoTimer1:
+          Serial.print("timer1\n");
+          break;
+        case IthoTimer2:
+          Serial.print("timer2\n");
+          break;
+        case IthoTimer3:
+          Serial.print("timer3\n");
+          break;
+        case IthoJoin:
+          Serial.print("join\n");
+          break;
+        case IthoLeave:
+          Serial.print("leave\n");
+          break;
 			} // switch (recv) command
 		} // checkfornewpacket
 	yield();
@@ -93,31 +92,31 @@ void loop(void) {
 
 void sendRegister() {
    Serial.println("sending join...");
-   rf.sendCommand(join);
+   rf.sendCommand(IthoJoin);
    Serial.println("sending join done.");
 }
 
 void sendLowSpeed() {
    Serial.println("sending low...");
-   rf.sendCommand(low);
+   rf.sendCommand(IthoLow);
    Serial.println("sending low done.");
 }
 
 void sendMediumSpeed() {
    Serial.println("sending medium...");
-   rf.sendCommand(medium);
+   rf.sendCommand(IthoMedium);
    Serial.println("sending medium done.");
 }
 
 void sendFullSpeed() {
    Serial.println("sending FullSpeed...");
-   rf.sendCommand(full);
+   rf.sendCommand(IthoFull);
    Serial.println("sending FullSpeed done.");
 }
 
 void sendTimer() {
    Serial.println("sending timer...");
-   rf.sendCommand(timer1);
+   rf.sendCommand(IthoTimer1);
    Serial.println("sending timer done.");
 }
 

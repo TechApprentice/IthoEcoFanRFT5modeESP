@@ -11,7 +11,7 @@
 IthoCC1101::IthoCC1101(uint8_t counter, uint8_t sendTries) : CC1101()
 {
 	this->outIthoPacket.counter = counter;
-	this->outIthoPacket.previous = low;
+	this->outIthoPacket.previous = IthoLow;
 	this->sendTries = sendTries;
 	this->receiveState = ExpectMessageStart;
 	
@@ -194,11 +194,11 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 	
 	switch (command)
 	{
-		case join:
+		case IthoJoin:
 			writeRegister(CC1101_PKTLEN , 72);
 			break;
 			
-		case leave:
+		case IthoLeave:
 			writeRegister(CC1101_PKTLEN , 57);
 			break;
 		
@@ -357,12 +357,12 @@ void IthoCC1101::initReceiveMessage2(IthoCommand expectedCommand)
 	//set packet length based on expected message
 	switch (expectedCommand)
 	{
-		case join:
+		case IthoJoin:
 			writeRegister(CC1101_PKTLEN ,64);
 			receiveState = ExpectJoinCommand;
 			break;
 			
-		case leave:
+		case IthoLeave:
 			writeRegister(CC1101_PKTLEN ,57);
 			receiveState = ExpectLeaveCommand;
 			break;					
@@ -592,15 +592,15 @@ void IthoCC1101::parseMessageStart()
 	}
 	
 	//determine command
-	inIthoPacket.command = unknown;
-	if (isFullCommand) inIthoPacket.command = full;
-	if (isMediumCommand) inIthoPacket.command = medium;
-	if (isLowCommand) inIthoPacket.command = low;
-	if (isTimer1Command) inIthoPacket.command = timer1;
-	if (isTimer2Command) inIthoPacket.command = timer2;
-	if (isTimer3Command) inIthoPacket.command = timer3;
-	if (isJoinCommand) inIthoPacket.command = join;
-	if (isLeaveCommand) inIthoPacket.command = leave;	
+	inIthoPacket.command = IthoUnknown;
+	if (isFullCommand) inIthoPacket.command = IthoFull;
+	if (isMediumCommand) inIthoPacket.command = IthoMedium;
+	if (isLowCommand) inIthoPacket.command = IthoLow;
+	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
+	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
+	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
+	if (isJoinCommand) inIthoPacket.command = IthoJoin;
+	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
 	
 	//previous command
 	inIthoPacket.previous = getMessage1PreviousCommand(inMessage1.data[14]);
@@ -665,15 +665,15 @@ void IthoCC1101::parseMessageCommand()
 	}	
 		
 	//determine command
-	inIthoPacket.command = unknown;
-	if (isFullCommand) inIthoPacket.command = full;
-	if (isMediumCommand) inIthoPacket.command = medium;
-	if (isLowCommand) inIthoPacket.command = low;
-	if (isTimer1Command) inIthoPacket.command = timer1;
-	if (isTimer2Command) inIthoPacket.command = timer2;
-	if (isTimer3Command) inIthoPacket.command = timer3;
-	if (isJoinCommand) inIthoPacket.command = join;
-	if (isLeaveCommand) inIthoPacket.command = leave;	
+	inIthoPacket.command = IthoUnknown;
+	if (isFullCommand) inIthoPacket.command = IthoFull;
+	if (isMediumCommand) inIthoPacket.command = IthoMedium;
+	if (isLowCommand) inIthoPacket.command = IthoLow;
+	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
+	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
+	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
+	if (isJoinCommand) inIthoPacket.command = IthoJoin;
+	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
 }
 
 void IthoCC1101::parseMessageJoin()
@@ -731,11 +731,11 @@ void IthoCC1101::testCreateMessage()
 	//get message2 bytes
 	switch (outIthoPacket.command)
 	{
-		case join:
+		case IthoJoin:
 			createMessageJoin(&outIthoPacket, &outMessage2);						
 			break;
 			
-		case leave:
+		case IthoLeave:
 			createMessageLeave(&outIthoPacket, &outMessage2);						
 			break;
 			
@@ -777,11 +777,11 @@ void IthoCC1101::sendCommand(IthoCommand command)
 	//get message2 bytes
 	switch (command)
 	{
-		case join:
+		case IthoJoin:
 			createMessageJoin(&outIthoPacket, &outMessage2);
 			break;
 		
-		case leave:
+		case IthoLeave:
 			createMessageLeave(&outIthoPacket, &outMessage2);
 			//the leave command needs to be transmitted for 1 second according the manual
 			maxTries = 30;
@@ -1013,13 +1013,13 @@ IthoCommand IthoCC1101::getMessage1PreviousCommand(uint8_t byte18)
 	switch (byte18)
 	{
 		case 77:
-			return join;
+			return IthoJoin;
 			
 		case 82:
-			return leave;
+			return IthoLeave;
 			
 		case 85:
-			return low;
+			return IthoLow;
 	}
 }
 
@@ -1027,10 +1027,10 @@ uint8_t IthoCC1101::getMessage1Byte18(IthoCommand command)
 {
 	switch (command)
 	{
-		case join:
+		case IthoJoin:
 			return 77;
 		
-		case leave:
+		case IthoLeave:
 			return 82;
 		
 		default:
@@ -1064,27 +1064,27 @@ uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command
 	
 	switch (command)
 	{
-		case timer1:
-		case timer3:
+		case IthoTimer1:
+		case IthoTimer3:
 			hi = 160;
 			var = 48 - command;
 			if (counter < var) counter = 64 - counter;
 			break;
 			
-		case join:
+		case IthoJoin:
 			hi = 96;
 			counter = 0;
 			break;
 				
-		case leave:
+		case IthoLeave:
 			hi = 160;
 			counter = 0;
 			break;
 							
-		case low:
-		case medium:
-		case full:
-		case timer2:
+		case IthoLow:
+		case IthoMedium:
+		case IthoFull:
+		case IthoTimer2:
 			hi = 96;
 			var = 48 - command;
 			if (counter < var) counter = 74 - counter;
@@ -1098,7 +1098,7 @@ uint8_t IthoCC1101::calculateMessage2Byte42(uint8_t counter, IthoCommand command
 {
 	uint8_t result;
 	
-	if (command == join || command == leave)
+	if (command == IthoJoin || command == IthoLeave)
 	{
 		counter = 1;
 	}
@@ -1118,31 +1118,31 @@ uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command
 {
 	switch (command)
 	{
-		case medium:
+		case IthoMedium:
 			break;
 				
-		case low:
-		case timer2:
+		case IthoLow:
+		case IthoTimer2:
 			if (counter % 2 == 0) counter -= 1;
 			break;
 			
-		case full:
+		case IthoFull:
 			counter += 2;
 			if (counter % 2 == 0) counter -= 1;
 			break;
 			
-		case timer1:
+		case IthoTimer1:
 			counter += 6;
 			if (counter % 2 == 0) counter -= 1;		
 			break;
 			
-		case timer3:
+		case IthoTimer3:
 			counter += 10;
 			if (counter % 2 == 0) counter -= 1;		
 			break;
 			
-		case join:
-		case leave:
+		case IthoJoin:
+		case IthoLeave:
 			counter = 0;
 			break;	
 	}
@@ -1189,21 +1189,21 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 {
 	switch (command)
 	{
-		case full:
+		case IthoFull:
 		return (uint8_t*)&ithoMessage1FullCommandBytes[0];
-		case medium:
+		case IthoMedium:
 		return (uint8_t*)&ithoMessage1MediumCommandBytes[0];
-		case low:
+		case IthoLow:
 		return (uint8_t*)&ithoMessage1LowCommandBytes[0];
-		case timer1:
+		case IthoTimer1:
 		return (uint8_t*)&ithoMessage1Timer1CommandBytes[0];
-		case timer2:
+		case IthoTimer2:
 		return (uint8_t*)&ithoMessage1Timer2CommandBytes[0];
-		case timer3:
+		case IthoTimer3:
 		return (uint8_t*)&ithoMessage1Timer3CommandBytes[0];
-		case join:
+		case IthoJoin:
 		return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
-		case leave:
+		case IthoLeave:
 		return (uint8_t*)&ithoMessage1LeaveCommandBytes[0];
 	}
 }
@@ -1212,21 +1212,21 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 {
 	switch (command)
 	{
-		case full:
+		case IthoFull:
 		return (uint8_t*)&ithoMessage2FullCommandBytes[0];
-		case medium:
+		case IthoMedium:
 		return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
-		case low:
+		case IthoLow:
 		return (uint8_t*)&ithoMessage2LowCommandBytes[0];
-		case timer1:
+		case IthoTimer1:
 		return (uint8_t*)&ithoMessage2Timer1CommandBytes[0];
-		case timer2:
+		case IthoTimer2:
 		return (uint8_t*)&ithoMessage2Timer2CommandBytes[0];
-		case timer3:
+		case IthoTimer3:
 		return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
-		case join:
+		case IthoJoin:
 		return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
-		case leave:
+		case IthoLeave:
 		return (uint8_t*)&ithoMessage2LeaveCommandBytes[0];
 	}
 }

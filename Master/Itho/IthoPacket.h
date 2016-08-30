@@ -9,18 +9,18 @@
 //do not change enum because they are used in calculations!
 typedef enum IthoCommand 
 {
-	unknown = 0,
+	IthoUnknown = 0,
 		
-	join = 4,
-	leave = 8,
+	IthoJoin = 4,
+	IthoLeave = 8,
 				
-	low = 35,	
-	medium = 36,	
-	full = 37,
+	IthoLow = 35,	
+	IthoMedium = 36,	
+	IthoFull = 37,
 	
-	timer1 = 41,
-	timer2 = 51,
-	timer3 = 61
+	IthoTimer1 = 41,
+	IthoTimer2 = 51,
+	IthoTimer3 = 61
 };
 
 
