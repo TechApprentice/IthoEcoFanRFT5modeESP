@@ -20,7 +20,8 @@ typedef enum IthoCommand
 	
 	IthoTimer1 = 41,
 	IthoTimer2 = 51,
-	IthoTimer3 = 61
+	IthoTimer3 = 61,
+	IthoAway = 34
 };
 
 
