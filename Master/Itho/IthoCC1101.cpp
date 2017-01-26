@@ -293,7 +293,7 @@ void IthoCC1101::initReceive()
 
 	writeCommand(CC1101_SCAL);
 
-	//wait for calibration to finish
+/	//wait for calibration to finish
 	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE) yield();
 
 	writeRegister(CC1101_MCSM0 ,0x18);			//no auto calibrate
@@ -313,7 +313,7 @@ void IthoCC1101::initReceive()
 
 void IthoCC1101::initReceiveMessage1()
 {
-	uint8_t marcState;
+ 	uint8_t marcState;
 	
 	writeCommand(CC1101_SIDLE);	//idle
 	
@@ -325,7 +325,7 @@ void IthoCC1101::initReceiveMessage1()
 	//set fifo mode with fixed packet length and sync bytes
 	writeRegister(CC1101_PKTLEN , 15);		//15 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
-	writeRegister(CC1101_SYNC1 ,172);		//message1 byte2
+	writeRegister(CC1101_SYNC1 ,172);		//message1 byte2 -- if not working change to 170, use 172 for remote with 'niet-thuis' function
 	writeRegister(CC1101_SYNC0 ,173);		//message1 byte3
 	writeRegister(CC1101_MDMCFG2 ,0x02);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);	
