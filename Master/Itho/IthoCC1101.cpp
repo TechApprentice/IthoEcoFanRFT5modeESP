@@ -63,7 +63,7 @@ void IthoCC1101::initSendMessage1()
 	writeRegister(CC1101_CHANNR ,0x00);		//00000000
 	writeRegister(CC1101_DEVIATN ,0x40);	//01000000
 	writeRegister(CC1101_FREND0 ,0x17);		//00010111	use index 7 in PA table
-	writeRegister(CC1101_MCSM0 ,0x18);		//00011000	PO timeout Approx. 146µs - 171µs, Auto calibrate When going from IDLE to RX or TX (or FSTXON)
+	writeRegister(CC1101_MCSM0 ,0x18);		//00011000	PO timeout Approx. 146Âµs - 171Âµs, Auto calibrate When going from IDLE to RX or TX (or FSTXON)
 	writeRegister(CC1101_FSCAL3 ,0xA9);		//10101001
 	writeRegister(CC1101_FSCAL2 ,0x2A);		//00101010
 	writeRegister(CC1101_FSCAL1 ,0x00);		//00000000
@@ -151,7 +151,7 @@ void IthoCC1101::initSendMessage2(IthoCommand command)
 	writeRegister(CC1101_CHANNR ,0x00);		//00000000
 	writeRegister(CC1101_DEVIATN ,0x50);	//difference compared to message1
 	writeRegister(CC1101_FREND0 ,0x17);		//00010111	use index 7 in PA table
-	writeRegister(CC1101_MCSM0 ,0x18);		//00011000	PO timeout Approx. 146µs - 171µs, Auto calibrate When going from IDLE to RX or TX (or FSTXON)
+	writeRegister(CC1101_MCSM0 ,0x18);		//00011000	PO timeout Approx. 146Âµs - 171Âµs, Auto calibrate When going from IDLE to RX or TX (or FSTXON)
 	writeRegister(CC1101_FSCAL3 ,0xA9);		//10101001
 	writeRegister(CC1101_FSCAL2 ,0x2A);		//00101010
 	writeRegister(CC1101_FSCAL1 ,0x00);		//00000000
@@ -261,7 +261,7 @@ void IthoCC1101::initReceive()
 	writeRegister(CC1101_IOCFG2 ,0x2E);			//High impedance (3-state)
 	writeRegister(CC1101_FSCTRL1 ,0x06);
 	writeRegister(CC1101_FSCTRL0 ,0x00);
-	writeRegister(CC1101_MDMCFG4 ,0x5A);
+	writeRegister(CC1101_MDMCFG4 ,0xE8);
 	writeRegister(CC1101_MDMCFG3 ,0x83);
 	writeRegister(CC1101_MDMCFG2 ,0x00);		//Enable digital DC blocking filter before demodulator, 2-FSK, Disable Manchester encoding/decoding, No preamble/sync 
 	writeRegister(CC1101_MDMCFG1 ,0x22);		//Disable FEC
@@ -318,14 +318,14 @@ void IthoCC1101::initReceiveMessage1()
 	writeCommand(CC1101_SIDLE);	//idle
 	
 	//set datarate
-	writeRegister(CC1101_MDMCFG4 ,0x08);
+	writeRegister(CC1101_MDMCFG4 ,0xE8);
 	writeRegister(CC1101_MDMCFG3 ,0x43);
 	writeRegister(CC1101_DEVIATN ,0x40);
 		
 	//set fifo mode with fixed packet length and sync bytes
 	writeRegister(CC1101_PKTLEN , 15);		//15 bytes message (sync at beginning of message is removed by CC1101)
 	writeRegister(CC1101_PKTCTRL0 ,0x00);
-	writeRegister(CC1101_SYNC1 ,170);		//message1 byte2
+	writeRegister(CC1101_SYNC1 ,172);		//message1 byte2
 	writeRegister(CC1101_SYNC0 ,173);		//message1 byte3
 	writeRegister(CC1101_MDMCFG2 ,0x02);
 	writeRegister(CC1101_PKTCTRL1 ,0x00);	
@@ -354,7 +354,7 @@ void IthoCC1101::initReceiveMessage2(IthoCommand expectedCommand)
 	writeRegister(CC1101_MDMCFG3 ,0x83);
 	writeRegister(CC1101_DEVIATN ,0x50);
 	
-	//set packet length based on expected message
+	//set packet length based on expected messager=
 	switch (expectedCommand)
 	{
 		case IthoJoin:
@@ -400,10 +400,11 @@ bool IthoCC1101::checkForNewPacket()
 	{
 		case ExpectMessageStart:
 			length = receiveData(&inMessage1, 15);
-	
 			//check if message1 is received
+
 			if ((length > 0) && (isValidMessageStart()))
 			{
+				Serial.print("Received Message1 bytes: ");
 				parseMessageStart();
 					
 				//switch to message2 RF settings
@@ -416,14 +417,15 @@ bool IthoCC1101::checkForNewPacket()
 		
 		case ExpectNormalCommand:
 			length = receiveData(&inMessage2, 42);
-						
+	
 			//check if message2 is received
 			if ((length > 0) && (isValidMessageCommand()))
 			{
+				Serial.print("Received Message2 bytes: ");
 				parseMessageCommand();
 				
 				//bug detection
-				//testCreateMessage();				
+				testCreateMessage();				
 								
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -453,7 +455,7 @@ bool IthoCC1101::checkForNewPacket()
 				parseMessageJoin();
 				
 				//bug detection
-				//testCreateMessage();
+				testCreateMessage();
 				
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -483,7 +485,7 @@ bool IthoCC1101::checkForNewPacket()
 				parseMessageLeave();
 				
 				//bug detection
-				//testCreateMessage();
+				testCreateMessage();
 				
 				//switch back to message1 RF settings
 				initReceiveMessage1();
@@ -510,7 +512,7 @@ bool IthoCC1101::checkForNewPacket()
 
 bool IthoCC1101::isValidMessageStart()
 {
-	if (inMessage1.data[12] != 170)	
+	if (inMessage1.data[12] != 171)	
 	{
 		return false;
 	}
@@ -558,6 +560,7 @@ void IthoCC1101::parseMessageStart()
 	bool isTimer1Command = true;
 	bool isTimer2Command = true;
 	bool isTimer3Command = true;
+	bool isAwayCommand = true;
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
 	
@@ -579,14 +582,18 @@ void IthoCC1101::parseMessageStart()
 	commandBytes[6] = inMessage1.data[11];
 	
 	//match received commandBytes with known command bytes
+	Serial.println("");
 	for (int i=0; i<7; i++)
 	{
+		Serial.print(commandBytes[i]);
+		Serial.print(".");
 		if (commandBytes[i] != ithoMessage1FullCommandBytes[i]) isFullCommand = false;
 		if (commandBytes[i] != ithoMessage1MediumCommandBytes[i]) isMediumCommand = false;
 		if (commandBytes[i] != ithoMessage1LowCommandBytes[i]) isLowCommand = false;
 		if (commandBytes[i] != ithoMessage1Timer1CommandBytes[i]) isTimer1Command = false;
 		if (commandBytes[i] != ithoMessage1Timer2CommandBytes[i]) isTimer2Command = false;
 		if (commandBytes[i] != ithoMessage1Timer3CommandBytes[i]) isTimer3Command = false;
+		if (commandBytes[i] != ithoMessage1AwayCommandBytes[i]) isAwayCommand = false;
 		if (commandBytes[i] != ithoMessage1JoinCommandBytes[i]) isJoinCommand = false;
 		if (commandBytes[i] != ithoMessage1LeaveCommandBytes[i]) isLeaveCommand = false;
 	}
@@ -599,8 +606,10 @@ void IthoCC1101::parseMessageStart()
 	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
 	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
 	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
+	if (isAwayCommand) inIthoPacket.command = IthoAway;
 	if (isJoinCommand) inIthoPacket.command = IthoJoin;
 	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
+	
 	
 	//previous command
 	inIthoPacket.previous = getMessage1PreviousCommand(inMessage1.data[14]);
@@ -614,6 +623,7 @@ void IthoCC1101::parseMessageCommand()
 	bool isTimer1Command = true;
 	bool isTimer2Command = true;
 	bool isTimer3Command = true;
+	bool isAwayCommand = true;
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
 		
@@ -650,10 +660,12 @@ void IthoCC1101::parseMessageCommand()
 	commandBytes[12] = inMessage2.data[30];		
 	commandBytes[13] = inMessage2.data[31];		
 	commandBytes[14] = inMessage2.data[32];				
-						
+	Serial.println("");
 	//match received commandBytes with known command bytes
 	for (int i=0; i<15; i++)
 	{
+		Serial.print(commandBytes[i]);
+		Serial.print(",");
 		if (commandBytes[i] != ithoMessage2FullCommandBytes[i]) isFullCommand = false;
 		if (commandBytes[i] != ithoMessage2MediumCommandBytes[i]) isMediumCommand = false;
 		if (commandBytes[i] != ithoMessage2LowCommandBytes[i]) isLowCommand = false;
@@ -662,6 +674,7 @@ void IthoCC1101::parseMessageCommand()
 		if (commandBytes[i] != ithoMessage2Timer3CommandBytes[i]) isTimer3Command = false;
 		if (commandBytes[i] != ithoMessage2JoinCommandBytes[i]) isJoinCommand = false;
 		if (commandBytes[i] != ithoMessage2LeaveCommandBytes[i]) isLeaveCommand = false;
+		if (commandBytes[i] != ithoMessage2AwayCommandBytes[i]) isAwayCommand = false;
 	}	
 		
 	//determine command
@@ -672,6 +685,7 @@ void IthoCC1101::parseMessageCommand()
 	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
 	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
 	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
+	if (isAwayCommand) inIthoPacket.command = IthoAway;
 	if (isJoinCommand) inIthoPacket.command = IthoJoin;
 	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
 }
@@ -1080,7 +1094,7 @@ uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command
 			hi = 160;
 			counter = 0;
 			break;
-							
+		case IthoAway:				
 		case IthoLow:
 		case IthoMedium:
 		case IthoFull:
@@ -1120,12 +1134,11 @@ uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command
 	{
 		case IthoMedium:
 			break;
-				
+		case IthoAway:	
 		case IthoLow:
 		case IthoTimer2:
 			if (counter % 2 == 0) counter -= 1;
 			break;
-			
 		case IthoFull:
 			counter += 2;
 			if (counter % 2 == 0) counter -= 1;
@@ -1201,6 +1214,8 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 		return (uint8_t*)&ithoMessage1Timer2CommandBytes[0];
 		case IthoTimer3:
 		return (uint8_t*)&ithoMessage1Timer3CommandBytes[0];
+		case IthoAway:
+		return (uint8_t*)&ithoMessage1AwayCommandBytes[0];
 		case IthoJoin:
 		return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
 		case IthoLeave:
@@ -1224,6 +1239,8 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 		return (uint8_t*)&ithoMessage2Timer2CommandBytes[0];
 		case IthoTimer3:
 		return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
+		case IthoAway:
+		return (uint8_t*)&ithoMessage2AwayCommandBytes[0];
 		case IthoJoin:
 		return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
 		case IthoLeave:
