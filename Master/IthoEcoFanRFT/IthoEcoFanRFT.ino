@@ -60,6 +60,9 @@ void loop(void) {
         case IthoUnknown:
           Serial.print("unknown\n");
           break;
+        case IthoAway:
+          Serial.print("away\n");
+          break;
         case IthoLow:
           Serial.print("low\n");
           break;
@@ -96,6 +99,11 @@ void sendRegister() {
    Serial.println("sending join done.");
 }
 
+void sendAway() {
+   Serial.println("sending away...");
+   rf.sendCommand(IthoAway);
+   Serial.println("sending away done.");
+}
 void sendLowSpeed() {
    Serial.println("sending low...");
    rf.sendCommand(IthoLow);
