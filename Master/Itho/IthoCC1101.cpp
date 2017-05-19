@@ -1,5 +1,6 @@
 /*
- * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
+ * Author: Klusjesman, modified by supersjimmie for Arduino/ESP8266
+ * modified and combined by racquemis and TechApprentice for 2 additional modes on ESP
  */
 
 #include "IthoCC1101.h"
@@ -293,7 +294,7 @@ void IthoCC1101::initReceive()
 
 	writeCommand(CC1101_SCAL);
 
-/	//wait for calibration to finish
+	//wait for calibration to finish
 	while ((readRegisterWithSyncProblem(CC1101_MARCSTATE, CC1101_STATUS_REGISTER)) != CC1101_MARCSTATE_IDLE) yield();
 
 	writeRegister(CC1101_MCSM0 ,0x18);			//no auto calibrate
@@ -554,13 +555,14 @@ bool IthoCC1101::isValidMessageLeave()
 
 void IthoCC1101::parseMessageStart()
 {
-	bool isFullCommand = true;
+	bool isHighCommand = true;
 	bool isMediumCommand = true;
 	bool isLowCommand = true;
 	bool isTimer1Command = true;
 	bool isTimer2Command = true;
 	bool isTimer3Command = true;
 	bool isAwayCommand = true;
+	bool isFullPowerCommand = true;
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
 	
@@ -587,26 +589,28 @@ void IthoCC1101::parseMessageStart()
 	{
 		Serial.print(commandBytes[i]);
 		Serial.print(".");
-		if (commandBytes[i] != ithoMessage1FullCommandBytes[i]) isFullCommand = false;
+		if (commandBytes[i] != ithoMessage1HighCommandBytes[i]) isHighCommand = false;
 		if (commandBytes[i] != ithoMessage1MediumCommandBytes[i]) isMediumCommand = false;
 		if (commandBytes[i] != ithoMessage1LowCommandBytes[i]) isLowCommand = false;
 		if (commandBytes[i] != ithoMessage1Timer1CommandBytes[i]) isTimer1Command = false;
 		if (commandBytes[i] != ithoMessage1Timer2CommandBytes[i]) isTimer2Command = false;
 		if (commandBytes[i] != ithoMessage1Timer3CommandBytes[i]) isTimer3Command = false;
 		if (commandBytes[i] != ithoMessage1AwayCommandBytes[i]) isAwayCommand = false;
+		if (commandBytes[i] != ithoMessage1FullPowerCommandBytes[i]) isFullPowerCommand = false;
 		if (commandBytes[i] != ithoMessage1JoinCommandBytes[i]) isJoinCommand = false;
 		if (commandBytes[i] != ithoMessage1LeaveCommandBytes[i]) isLeaveCommand = false;
 	}
 	
 	//determine command
 	inIthoPacket.command = IthoUnknown;
-	if (isFullCommand) inIthoPacket.command = IthoFull;
+	if (isHighCommand) inIthoPacket.command = IthoHigh;
 	if (isMediumCommand) inIthoPacket.command = IthoMedium;
 	if (isLowCommand) inIthoPacket.command = IthoLow;
 	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
 	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
 	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
 	if (isAwayCommand) inIthoPacket.command = IthoAway;
+	if (isFullPowerCommand) inIthoPacket.command = IthoFullPower;
 	if (isJoinCommand) inIthoPacket.command = IthoJoin;
 	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
 	
@@ -617,13 +621,14 @@ void IthoCC1101::parseMessageStart()
 
 void IthoCC1101::parseMessageCommand()
 {
-	bool isFullCommand = true;
+	bool isHighCommand = true;
 	bool isMediumCommand = true;
 	bool isLowCommand = true;
 	bool isTimer1Command = true;
 	bool isTimer2Command = true;
 	bool isTimer3Command = true;
 	bool isAwayCommand = true;
+	bool isFullPowerCommand = true;
 	bool isJoinCommand = true;
 	bool isLeaveCommand = true;
 		
@@ -666,7 +671,7 @@ void IthoCC1101::parseMessageCommand()
 	{
 		Serial.print(commandBytes[i]);
 		Serial.print(",");
-		if (commandBytes[i] != ithoMessage2FullCommandBytes[i]) isFullCommand = false;
+		if (commandBytes[i] != ithoMessage2HighCommandBytes[i]) isHighCommand = false;
 		if (commandBytes[i] != ithoMessage2MediumCommandBytes[i]) isMediumCommand = false;
 		if (commandBytes[i] != ithoMessage2LowCommandBytes[i]) isLowCommand = false;
 		if (commandBytes[i] != ithoMessage2Timer1CommandBytes[i]) isTimer1Command = false;
@@ -675,17 +680,19 @@ void IthoCC1101::parseMessageCommand()
 		if (commandBytes[i] != ithoMessage2JoinCommandBytes[i]) isJoinCommand = false;
 		if (commandBytes[i] != ithoMessage2LeaveCommandBytes[i]) isLeaveCommand = false;
 		if (commandBytes[i] != ithoMessage2AwayCommandBytes[i]) isAwayCommand = false;
+		if (commandBytes[i] != ithoMessage2FullPowerCommandBytes[i]) isFullPowerCommand = false;
 	}	
 		
 	//determine command
 	inIthoPacket.command = IthoUnknown;
-	if (isFullCommand) inIthoPacket.command = IthoFull;
+	if (isHighCommand) inIthoPacket.command = IthoHigh;
 	if (isMediumCommand) inIthoPacket.command = IthoMedium;
 	if (isLowCommand) inIthoPacket.command = IthoLow;
 	if (isTimer1Command) inIthoPacket.command = IthoTimer1;
 	if (isTimer2Command) inIthoPacket.command = IthoTimer2;
 	if (isTimer3Command) inIthoPacket.command = IthoTimer3;
 	if (isAwayCommand) inIthoPacket.command = IthoAway;
+	if (isFullPowerCommand) inIthoPacket.command = IthoFullPower;
 	if (isJoinCommand) inIthoPacket.command = IthoJoin;
 	if (isLeaveCommand) inIthoPacket.command = IthoLeave;	
 }
@@ -1094,10 +1101,12 @@ uint8_t IthoCC1101::calculateMessage2Byte41(uint8_t counter, IthoCommand command
 			hi = 160;
 			counter = 0;
 			break;
-		case IthoAway:				
+		case IthoAway:
+
+		case IthoFullPower:
 		case IthoLow:
 		case IthoMedium:
-		case IthoFull:
+		case IthoHigh:
 		case IthoTimer2:
 			hi = 96;
 			var = 48 - command;
@@ -1134,12 +1143,19 @@ uint8_t IthoCC1101::calculateMessage2Byte43(uint8_t counter, IthoCommand command
 	{
 		case IthoMedium:
 			break;
-		case IthoAway:	
+		case IthoAway:
+			counter -= 1;
+			if (counter % 2 == 0) counter -= 1;
+			break;	
+		case IthoFullPower:
+			counter += 3;
+			if (counter % 2 == 0) counter -= 1;
+			break;
 		case IthoLow:
 		case IthoTimer2:
 			if (counter % 2 == 0) counter -= 1;
 			break;
-		case IthoFull:
+		case IthoHigh:
 			counter += 2;
 			if (counter % 2 == 0) counter -= 1;
 			break;
@@ -1202,8 +1218,8 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 {
 	switch (command)
 	{
-		case IthoFull:
-		return (uint8_t*)&ithoMessage1FullCommandBytes[0];
+		case IthoHigh:
+		return (uint8_t*)&ithoMessage1HighCommandBytes[0];
 		case IthoMedium:
 		return (uint8_t*)&ithoMessage1MediumCommandBytes[0];
 		case IthoLow:
@@ -1216,6 +1232,8 @@ uint8_t* IthoCC1101::getMessage1CommandBytes(IthoCommand command)
 		return (uint8_t*)&ithoMessage1Timer3CommandBytes[0];
 		case IthoAway:
 		return (uint8_t*)&ithoMessage1AwayCommandBytes[0];
+		case IthoFullPower:
+		return (uint8_t*)&ithoMessage1FullPowerCommandBytes[0];
 		case IthoJoin:
 		return (uint8_t*)&ithoMessage1JoinCommandBytes[0];
 		case IthoLeave:
@@ -1227,8 +1245,8 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 {
 	switch (command)
 	{
-		case IthoFull:
-		return (uint8_t*)&ithoMessage2FullCommandBytes[0];
+		case IthoHigh:
+		return (uint8_t*)&ithoMessage2HighCommandBytes[0];
 		case IthoMedium:
 		return (uint8_t*)&ithoMessage2MediumCommandBytes[0];
 		case IthoLow:
@@ -1241,6 +1259,8 @@ uint8_t* IthoCC1101::getMessage2CommandBytes(IthoCommand command)
 		return (uint8_t*)&ithoMessage2Timer3CommandBytes[0];
 		case IthoAway:
 		return (uint8_t*)&ithoMessage2AwayCommandBytes[0];
+		case IthoFullPower:
+		return (uint8_t*)&ithoMessage2FullPowerCommandBytes[0];
 		case IthoJoin:
 		return (uint8_t*)&ithoMessage2JoinCommandBytes[0];
 		case IthoLeave:
