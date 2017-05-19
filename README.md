@@ -26,3 +26,5 @@ This won't be a problem with an ESP8266, but for Arduino you either need to use 
 For use with an ESP8266, you will need the ESP8266 core for Arduino from https://github.com/esp8266/Arduino
 
 For SPI, pins 12-15 ()aka D5-D8) are used, a larger ESP8266 model like (but not only) the ESP-03, ESP-07, ESP-12(D, E) or a NodeMCU board is required.
+
+This version is a combination of the work of Klusjesman, Supersjimmie, ThinkPad and racquemis by TechApprentice
