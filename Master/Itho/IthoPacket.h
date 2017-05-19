@@ -1,5 +1,6 @@
 /*
  * Author: Klusjesman, modified bij supersjimmie for Arduino/ESP8266
+ * modified and combined by racquemis and TechApprentice for 2 additional modes on ESP
  */
 
 #ifndef ITHOPACKET_H_
@@ -16,7 +17,8 @@ typedef enum IthoCommand
 				
 	IthoLow = 35,	
 	IthoMedium = 36,	
-	IthoFull = 37,
+	IthoHigh = 37,
+	IthoFullPower = 38,
 	
 	IthoTimer1 = 41,
 	IthoTimer2 = 51,
